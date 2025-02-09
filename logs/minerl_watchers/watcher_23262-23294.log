@@ -1,0 +1,9 @@
+2025-01-07 21:30:07 kubeben-610-1188d process_watcher[23327] INFO Process watcher started between parent 23262 and child 23294 
+2025-01-07 21:31:46 kubeben-610-1188d process_watcher[23327] INFO Parent is not running, hence we need terminate the child.
+2025-01-07 21:31:46 kubeben-610-1188d process_watcher[23327] INFO About to reap process tree of 23294:launchClient.sh:/usr/bin/bash i sleeping, owner 1965, printing process tree status in termination order:
+2025-01-07 21:31:46 kubeben-610-1188d process_watcher[23327] INFO 	-23298:java:/usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java i sleeping, owner 23294
+2025-01-07 21:31:46 kubeben-610-1188d process_watcher[23327] INFO 	-23294:launchClient.sh:/usr/bin/bash i sleeping, owner 1965
+2025-01-07 21:31:46 kubeben-610-1188d process_watcher[23327] INFO Trying to SIGTERM 23298:java:/usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java i sleeping, owner 23294
+2025-01-07 21:31:51 kubeben-610-1188d process_watcher[23327] INFO Process 23298 survived SIGTERM; trying SIGKILL on 23298:java:/usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java i sleeping, owner 23294
+2025-01-07 21:31:52 kubeben-610-1188d process_watcher[23327] INFO Process psutil.Process(pid=23298, name='java', status='terminated', started='21:30:05') terminated with exit code None
+2025-01-07 21:31:52 kubeben-610-1188d process_watcher[23327] INFO Process psutil.Process(pid=23294, name='launchClient.sh', status='terminated', started='21:30:05') does not exist or is zombie.
