@@ -1,1 +1,14 @@
+# venv stuffs
 *venv
+
+# logs
+*logs
+*.log
+
+# dont commit MineDojo for now?
+*MineDojo
+
+# dont commit jar. Might be confusing alzhiemers ben if he wants to 
+# build from scratch, but documentation should be sufficient.
+*.jar
+*MixinGradle-dcfaf61
