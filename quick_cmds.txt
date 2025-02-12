@@ -1,0 +1,4 @@
+# oh yeah its docker time
+
+docker run --gpus=all -v '/mnt/e/AutonoMC:/AutonoMC'  -it -d -p 8080:8080 minedojo/minedojo:latest tail -f /dev/null
+sudo ./opt/conda/lib/python3.9/site-packages/minedojo/sim/Malmo/Minecraft/launchClient.sh
