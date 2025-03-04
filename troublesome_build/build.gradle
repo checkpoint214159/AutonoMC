@@ -6,7 +6,8 @@ buildscript {
         jcenter()
         mavenCentral()
         maven {
-            url = "file:/AutonoMC/troublesome_build/" // Local directory where the repository was cloned
+            // url = "file:/AutonoMC/troublesome_build/" // Local directory where the repository was cloned
+            url = "file:/mnt/e/AutonoMC/troublesome_build/" // Local directory where the repository was cloned
         }
         maven {
             name = "forge"
