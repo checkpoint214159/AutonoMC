@@ -7,9 +7,9 @@ class PrefNet(nn.Module):
     """
     A module that produces some parameters of a policy distribution.
     The actual neural network is intended to represent how, given some target
-    end observation, we come up with various policies to achieve that goal. 
+    end state, and our current state, we come up with various policies to achieve that goal. 
 
-    PrefNet: o_target -> policy_dist_params
+    PrefNet: s_target, s_curr -> policy_dist_params
 
     From there, find the expected free energy of each policy, which gives us an
     idea of what policies might do better. This allows us to form a posterior over policies,
