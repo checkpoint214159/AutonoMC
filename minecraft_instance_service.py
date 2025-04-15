@@ -51,12 +51,29 @@ class MinecraftInstance:
         assert len(action) == len(self.sample_act), f'Assertion failed. Pass in a list of integers that is of size {len(self.sample_act)}'
         obs, reward, done, info = self.env.step(action)
 
-        pic = obs['rgb']
-        print('pic shape', pic.shape)
-        pic = pic.transpose((1, 2, 0))
+        def convert_arrays_to_lists(obj):
+            if isinstance(obj, dict):
+                return {k: convert_arrays_to_lists(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [convert_arrays_to_lists(elem) for elem in obj]
+            elif isinstance(obj, tuple):
+                return tuple(convert_arrays_to_lists(elem) for elem in obj)
+            elif isinstance(obj, np.ndarray):
+                return obj.tolist()
+            else:
+                return obj
+        
+        import time
+        start = time.time()
+        obs = convert_arrays_to_lists(obs)
+        end = time.time()
+        print(end - start, 'time elapsed')
 
         return {
-            'obs': json.dumps(pic.tolist()),
+            'obs': obs,
+            'reward': reward,
+            'done': done,
+            'info': info,
         }
 
 
