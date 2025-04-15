@@ -11,13 +11,23 @@ Its forward method controls the flow of everything.
 
 import torch
 from torch import nn
+from mineclip import MineCLIP
 
 class Agent(nn.Module):
     """
     A minecraft agent built on the concepts of active inference.
     """
 
-    def __init__(self, num_policies):
+    def __init__(self, clip_config, num_policies):
+
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        path = clip_config.pop('ckpt_path', None)
+
+        # print('cfg', cfg)
+        # print('device', device)
+        self.encoder = MineCLIP(**clip_config).to(device)
+        self.encoder.load_ckpt(path, strict=True)
+        print("Successfully loaded MineCLIP.")
 
         self.preference_net = 1
         self.interpreter = 1
@@ -25,7 +35,16 @@ class Agent(nn.Module):
         self.likelihood_model = 1 # P( o | s ). The question is, how do we learn such a model?
 
         self.num_policies = num_policies
-        self.state_history = []
+        self.state_dicts = {}
+
+        self.curr_timestep = 0
+
+    def create_target_state(self, target):
+        """
+        Encode a target observation into latent observation into state. This is the end goal state the
+        agent is trying to achieve. This end goal state technically shifts which each timestep, since although the 
+        target observation is the same, how it interprets that target observation should change, as it itself changes.
+        """
 
 
     def forward(self,
@@ -36,7 +55,7 @@ class Agent(nn.Module):
         Order of execution:
             1. Encode current observation into a latent observation.
             2. Calculate model surprise with respect to the current latent observation
-            3. Generate Q model which minimizes variational free energy of the current state
+            3. Minimize VFE
             4. Sample the several policies from the new Q model.
             5. Within each policy, calculate EFE.
             6. Update distribution over policies
@@ -46,7 +65,7 @@ class Agent(nn.Module):
             10. Repeat 1 - 9 for infinity lol or until you run out of iterations 
         """
         # 1 - 3:
-        Q = self.forward_vfe(observations)
+        Q = self.perception(observations)
 
         # 4 - 7:
         converged = False
@@ -61,57 +80,56 @@ class Agent(nn.Module):
         action = policy.sample()
 
         return action
+    
+    def kl_divergence(self, mean1, mean2):
+        """
+        Calculate KL divergence given two univariate gaussians, according to 
+        https://math.stackexchange.com/questions/2888353/how-to-analytically-compute-kl-divergence-of-two-gaussian-distributions
+        """
+        return 0.5 * (-1 + 1 + (mean1 - mean2) ** 2).sum()  # what even. idk bro, if gaussian is isotropic multivariate, its just this?
+    
+    def planning(
+            self,
+            policy,
+        )
 
-    def forward_vfe(
+    def perception(
             self,
             observations
         ):
         """
         Creates an new model which has minimized VFE for the current observation.
 
-        We can then sample from this model several policies to further refine it
-        to minimize EFE.
+        We can then sample from this model several policies to further refine them.
 
-        Here is how it is done in the current literature (if I am not mistaken)
-        1. Obtain current observation.
-        2. Calculate VFE with prior states.
-        3. Update prior states based on some error.
-        4. Repeat 2-3 until convergence.
-
-        Now, we make a changes. Because we are dealing with inputs of insane complexity themselves, we must
-        encode the current observations into a 'latent' observation. This should be distinct from the idea of 'latent states', since
-        a 'latent observation' would be some compressed interpretation of what you are observing, whilst the latent state would (should)
-        encode some larger idea of the world BEYOND that which is observable. The final process will be as such:
         1. Obtain current observation, and encode it into some latent observation state.
-        2. Calculate VFE of this latent observation, with prior states.
-        3. Update prior states based on some error.
+        2. Calculate VFE of this latent observation, with prior state at this timestep.
+        3. Update model to minimize this VFE.
+        4. Subsequently, 
         4. Repeat 2-3 until convergence.
         """
 
-        # for now, assume deterministing tings 
-        latent_observation = self.encode_obs(observations)
-        mean_latent = self.likelihood_model(latent_observation)  # as of now, a (dim, 1) shape vector representing 1 mean per dimension.
-        # in the future could have more than one mean to denote the sum of multiple gaussians? idk
+        latent_observation = self.encoder.forward_image_features(observations)  # observations must be 5d. tensor.
+        q_s_t = self.likelihood_model(latent_observation)
         t = self.curr_timestep
 
-        # If we are at the start timestep, just predict future priors.
-        if t == 0:
-            pass
-        # else if we are at the first timestep and beyond, we can start minimizing VFE.
+        # If we are not at the zeroth timestep, find model which minimizes VFE.
+        if t != 0:
+            # First round of VFE with p_s_t calculated at the previous timestep, and update the model.
+            p_s_t = self.state_dict[t - 1]
+            self.kl_divergence(p_s_t, q_s_t)
+
+            # Then, for subsequent rounds of inference sample some random timestep, and do VFH at that timestep.
+            # for now, lets not write this code.
+            # converged = False
+            # while not converged:
+            #     random_timestep = horizon
+
+
+        # if we are at the zeroth timestep, there is no history to test our perceptions against. moving on!
         else:
-            # if we are at the first timestep, the very first round of VFE updating only consist of a message passed from latent observations.
-            # this is because the model has not been updated yet since the last timestep, since no planning over policies was done yet.
-            # in subsequent rounds of VFE updating, since the model has been updated and the state transitions for the previous and future timesteps
-            # have been updated, these factors can be used in updating.
-            if t == 1:
-                pass
-            # if we are in subsequent timesteps, the model has already been updated from the previous round of VFE planning.
-            # thus, proceed with normal VFE minimization as expected. (3 factors if curr observation is present, 2 if we are doing it
-            # in the past or future)
-            else:
-                pass
-        
-        # error = 0.5 * log(transition model * s - 1) + log(transition model * s at t+ 1) + log likelihood * curr_obs - curr state
+            pass
+
  
 import numpy as np
 import matplotlib.pyplot as plt
@@ -138,3 +156,34 @@ ax2 = fig2.add_subplot(111)
 ax2.contourf(x, y, rv.pdf(pos))
 print('rv.pdf pos', rv.pdf(pos))
 plt.savefig('waht3.png')
+
+conver
+while not converged:
+    random_timestep = generate_random_timestep()
+    generate_state_dict(random_timestep)  # --> Q(s_t | s_t_m1, a)
+    
+    
+    p_s_t, p_s_t_1 = self.state_dict[random_timestep], self.state_dict[random_timestep + 1]
+    difference = kl_divergence(p_s_t, p_s_t_1)
+    # do something, backprop something
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
